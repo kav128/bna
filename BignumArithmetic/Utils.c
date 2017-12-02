@@ -16,7 +16,7 @@ void ZeroTrim(char *str)
 	{
 		shift++;
 	}
-	if (shift == len - 1)
+	if (shift == len - start - 1)
 	{
 		shift--;
 	}
@@ -81,16 +81,12 @@ char Abs(char *a)
 // Меняем знак у числа
 void Negative(char *a)
 {
-	if (*a == '-')
+	ZeroTrim(a);
+	if (*a != '0')
 	{
-		Abs(a);
-	}
-	else
-	{
-		if (*a == '0')
+		if (*a == '-')
 		{
-			*a = '-';
-			ZeroTrim(a);
+			Abs(a);
 		}
 		else
 		{
@@ -149,4 +145,14 @@ int Compare(const char *a, const char *b)
 	free(_b);
 	free(_a);
 	return res;
+}
+
+void memswap(char *a, char *b, size_t len)
+{
+	for (size_t i = 0; i < len; i++)
+	{
+		*(a + i) ^= *(b + i);
+		*(b + i) ^= *(a + i);
+		*(a + i) ^= *(b + i);
+	}
 }
