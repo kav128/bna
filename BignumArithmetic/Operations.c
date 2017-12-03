@@ -124,6 +124,7 @@ void Add(const char *a, const char *b, char *res)
 {
 	memcpy(_a, a, BufSize);
 	memcpy(_b, b, BufSize);
+	Erase(res);
 
 	ZeroTrim(_a);
 	ZeroTrim(_b);
@@ -173,6 +174,7 @@ void Sub(const char *a, const char *b, char *res)
 {
 	memcpy(_a, a, BufSize);
 	memcpy(_b, b, BufSize);
+	Erase(res);
 
 	ZeroTrim(_a);
 	ZeroTrim(_b);
