@@ -119,6 +119,39 @@ void MulN(const char *a, const char *b, char *res)
 	ZeroTrim(res);
 }
 
+// Деление числа на число. Крайне медленный алгоритм. Должна применяться для деления на числа меньше 10. В a остается остаток
+char DivSimple(char *a, char *b)
+{
+	char i = 0;
+	while (Compare(a, b) >= 0)
+	{
+		Sub(a, b, a);
+		i++;
+	}
+
+	return i;
+}
+
+// "Нормализованное" деление, 0 <= b <= a
+void DivN(const char *a, const char *b, char *res)
+{
+	/*memcpy(_a, a, BufSize);
+	memcpy(_b, b, BufSize);*/
+
+	memset(p, 0, BufSize);
+	size_t lna = strlen(a);
+	size_t lnb = strlen(b);
+	char *rs = res;
+	memcpy(p, a, lnb);
+	*(rs++) = DivSimple(p, b) + '0';
+	for (int i = lnb; i < lna; i++)
+	{
+		*(p + strlen(p)) = *(a + i);
+		*(rs++) = DivSimple(p, b) + '0';
+	}
+	ZeroTrim(res);
+}
+
 // Сложение
 void Add(const char *a, const char *b, char *res)
 {
@@ -224,6 +257,7 @@ void Mul(const char *a, const char *b, char *res)
 {
 	memcpy(_a, a, BufSize);
 	memcpy(_b, b, BufSize);
+	Erase(res);
 
 	char sga = Abs(_a);
 	char sgb = Abs(_b);
@@ -233,4 +267,25 @@ void Mul(const char *a, const char *b, char *res)
 	{
 		Negative(res);
 	}
+}
+
+// Деление
+void Div(const char *a, const char *b, char *res)
+{
+	char *__a = calloc(BufSize, 1);
+	char *__b = calloc(BufSize, 1);
+	memcpy(__a, a, BufSize);
+	memcpy(__b, b, BufSize);
+	Erase(res);
+
+	char sga = Abs(__a);
+	char sgb = Abs(__b);
+
+	DivN(__a, __b, res);
+	if (sga != sgb)
+	{
+		Negative(res);
+	}
+	free(__b);
+	free(__a);
 }
