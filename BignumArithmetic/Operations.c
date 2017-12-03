@@ -82,6 +82,43 @@ void SubN(char *res)
 	free(_p);
 }
 
+// Умножение на однозначное число и добавление нескольких нулей в конец. Служебная функция
+void MulToIntN(const char *a, char b, char *res, size_t zeros)
+{
+	memcpy(_a, a, BufSize);
+	memset(p, 0, BufSize);
+	AddZeros(_a, 1);
+	size_t ln = strlen(_a);
+	for (int i = ln - 1; i >= 0; i--)
+	{
+		char rs = (*(_a + i) - '0') * b + *(p + i);
+		*(res + i) = rs % 10 + '0';
+		if (i > 0)
+		{
+			*(p + i - 1) = rs / 10;
+		}
+	}
+	ZeroTrim(res);
+
+	ln = strlen(res);
+	memset(res + ln, '0', zeros);
+}
+
+// "Нормализованное" умножение, 0 <= a, b
+void MulN(const char *a, const char *b, char *res)
+{
+	Erase(res);
+	*res = '0';
+	size_t lnb = strlen(b);
+	memset(p, 0, BufSize);
+	for (int i = lnb - 1; i >= 0; i--)
+	{
+		MulToIntN(a, *(b + i) - '0', p, lnb - i - 1);
+		Add(res, p, res);
+	}
+	ZeroTrim(res);
+}
+
 // Сложение
 void Add(const char *a, const char *b, char *res)
 {
@@ -178,4 +215,20 @@ void Sub(const char *a, const char *b, char *res)
 	}
 
 	ZeroTrim(res);
+}
+
+// Умножение
+void Mul(const char *a, const char *b, char *res)
+{
+	memcpy(_a, a, BufSize);
+	memcpy(_b, b, BufSize);
+
+	char sga = Abs(_a);
+	char sgb = Abs(_b);
+	
+	MulN(_a, _b, res);
+	if (sga != sgb)
+	{
+		Negative(res);
+	}
 }
