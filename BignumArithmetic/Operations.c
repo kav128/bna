@@ -7,7 +7,7 @@
 typedef signed char shortint;
 
 // Размер всех строк для хранения чисел и промежуточных вычислений
-const size_t BufSize = 64;
+size_t BufSize = 512;
 // Строки для локального хранения аргументов (чтобы не подпортить внешние данные)
 char *_a, *_b;
 // Вспомогательная строка
@@ -135,9 +135,6 @@ char DivSimple(char *a, char *b)
 // "Нормализованное" деление, 0 <= b <= a
 void DivN(const char *a, const char *b, char *res)
 {
-	/*memcpy(_a, a, BufSize);
-	memcpy(_b, b, BufSize);*/
-
 	memset(p, 0, BufSize);
 	size_t lna = strlen(a);
 	size_t lnb = strlen(b);
@@ -255,18 +252,22 @@ void Sub(const char *a, const char *b, char *res)
 // Умножение
 void Mul(const char *a, const char *b, char *res)
 {
-	memcpy(_a, a, BufSize);
-	memcpy(_b, b, BufSize);
+	char *__a = calloc(BufSize, 1);
+	char *__b = calloc(BufSize, 1);
+	memcpy(__a, a, BufSize);
+	memcpy(__b, b, BufSize);
 	Erase(res);
 
-	char sga = Abs(_a);
-	char sgb = Abs(_b);
-	
-	MulN(_a, _b, res);
+	char sga = Abs(__a);
+	char sgb = Abs(__b);
+
+	MulN(__a, __b, res);
 	if (sga != sgb)
 	{
 		Negative(res);
 	}
+	free(__b);
+	free(__a);
 }
 
 // Деление

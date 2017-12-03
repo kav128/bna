@@ -3,7 +3,7 @@
 #include "Utils.h"
 
 // Размер всех строк для хранения чисел и промежуточных вычислений
-extern const size_t BufSize;
+extern size_t BufSize;
 
 // Избавляемся от лидирующих нулей
 void ZeroTrim(char *str)
