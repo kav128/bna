@@ -8,7 +8,8 @@
 
 extern size_t BufSize;
 inline void pHeader();
-inline void pHelp();
+inline void pHelp(char clrmode);
+inline void pConsoleHelp(char clrmode);
 
 int main(int argc, char* argv[])
 {
@@ -63,7 +64,7 @@ int main(int argc, char* argv[])
 
 	if (!flg)
 	{
-		pHelp();
+		pHelp(clrmode);
 		return 0;
 	}
 
@@ -90,7 +91,7 @@ int main(int argc, char* argv[])
 		}
 		if (!strncmp(a, "help", 4))
 		{
-			pHelp();
+			pHelp(clrmode);
 			Erase(a);
 			continue;
 		}
@@ -164,11 +165,37 @@ inline void pHeader()
 	printf("Artem Krylov, M3105; ITMO University, St. Petersburg, 2017\n\n");
 }
 
-inline void pHelp()
+inline void pHelp(char clrmode)
 {
 	pHeader();
 	printf("Syntax: bna [options]\n\n");
 	printf("Options:\n");
 	printf("-bsize <n>\tSets size for string buffers\n");
-	printf("-clear\t\tTurns on \"clear mode\" - no prompts are displaying\n");
+	printf("-clear\t\tTurns on \"clear mode\" - no prompts are displaying\n\n");
+	pConsoleHelp(clrmode);
+}
+
+inline void pConsoleHelp(char clrmode)
+{
+	printf("Console interface usage:\n");
+	if (!clrmode)
+	{
+		printf("a> (Enter operand 'a' here)\n");
+		printf("b> (Enter operand 'b' here)\n");
+		printf("o> (Enter operator here. Supported operators: '+', '-', '*', '/')\n\n");
+		printf("Example:\n");
+		printf("a> 25\n");
+		printf("b> 89\n");
+		printf("o> +\n\n");
+	}
+	else
+	{
+		printf("Enter operand 'a'\n");
+		printf("Enter operand 'b'\n");
+		printf("Enter operator. Supported operators: '+', '-', '*', '/'\n\n");
+		printf("Example:\n");
+		printf("25\n");
+		printf("89\n");
+		printf("+\n\n");
+	}
 }
