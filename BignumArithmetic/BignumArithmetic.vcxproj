@@ -122,11 +122,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ConsoleUtils.c" />
+    <ClCompile Include="FileUtils.c" />
     <ClCompile Include="Operations.c" />
     <ClCompile Include="Source.c" />
     <ClCompile Include="Utils.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ConsoleUtils.h" />
+    <ClInclude Include="FileUtils.h" />
     <ClInclude Include="Operations.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>

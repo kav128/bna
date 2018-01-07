@@ -5,23 +5,30 @@
 #include <stdlib.h> 
 #include "Operations.h"
 #include "Utils.h"
+#include "ConsoleUtils.h"
+#include "FileUtils.h"
 
+enum ioMode
+{
+	ioConsole, ioFile
+};
 extern size_t BufSize;
 inline void pHeader();
-inline void pHelp(char clrmode);
-inline void pConsoleHelp(char clrmode);
+inline void pHelp(char clrmode, enum ioMode iomode);
 inline int Calculate(char *a, char *b, char *r, char op);
-inline int ReadParameters(int argc, char* argv[], char *clrmode);
-inline int Input(char *a, char *b, char *op, char clrmode);
+inline int ReadParameters(int argc, char* argv[], char *clrmode, enum ioMode *iomode);
+
 
 int main(int argc, char* argv[])
 {
+	// По умолчанию читаем с консоли
+	enum ioMode curmode = ioConsole;
 	char clrmode = 0;
-	int pcorrect = ReadParameters(argc, argv, &clrmode);
+	int pcorrect = ReadParameters(argc, argv, &clrmode, &curmode);
 
 	if (!pcorrect)
 	{
-		pHelp(clrmode);
+		pHelp(clrmode, curmode);
 		return 0;
 	}
 
@@ -35,30 +42,47 @@ int main(int argc, char* argv[])
 	char *b = calloc(BufSize, 1);
 	char *r = calloc(BufSize, 1);
 
-	while (1)
-	{
-		char op;
-		int inp = Input(a, b, &op, clrmode);
-		if (inp == 1)
-		{
-			break;
-		}
-		if (inp == 2)
-		{
-			pHelp(clrmode);
-			continue;
-		}
-		
-		Calculate(a, b, r, op);
+	char op;
 
-		if (!clrmode)
+	if (curmode == ioFile)
+	{
+		FILE *ifile = NULL;
+		FILE *ofile = NULL;
+		while (!InitFiles(&ifile, &ofile)); // Повторяем, пока не получим валидные указатели на файлы
+		FileInput(ifile, a, b, &op);
+		if (Calculate(a, b, r, op))
 		{
-			printf("Ans = ");
+			fprintf(ofile, "%s\n", r);
 		}
-		printf("%s\n", r);
-		Erase(a);
-		Erase(b);
-		Erase(r);
+		else
+		{
+			printf("Error\n");
+		}
+		fclose(ofile);
+		fclose(ifile);
+	}
+	else
+	{
+		while (1)
+		{
+			int inp = ConsoleInput(a, b, &op, clrmode);
+			if (inp == 1)
+			{
+				break;
+			}
+			if (inp == 2)
+			{
+				pHelp(clrmode, curmode);
+				continue;
+			}
+
+			Calculate(a, b, r, op);
+
+			ConsoleOutput(r, clrmode);
+			Erase(a);
+			Erase(b);
+			Erase(r);
+		}
 	}
 
 	free(r);
@@ -74,49 +98,28 @@ inline void pHeader()
 	printf("Artem Krylov, M3105; ITMO University, St. Petersburg, 2017\n\n");
 }
 
-inline void pHelp(char clrmode)
+inline void pHelp(char clrmode, enum ioMode iomode)
 {
 	pHeader();
 	printf("Syntax: bna [options]\n\n");
 	printf("Options:\n");
-	printf("-bsize <n>\tSets size for string buffers\n");
-	printf("-clear\t\tTurns on \"clear mode\" - no prompts are displaying\n\n");
-	pConsoleHelp(clrmode);
-}
-
-inline void pConsoleHelp(char clrmode)
-{
-	printf("Console interface usage:\n");
-	if (!clrmode)
+	printf("-bsize <n>\n\tSets size for string buffers\n");
+	printf("-clear\n\tTurns on \"clear mode\" - no prompts are displaying\n");
+	printf("-iomode <console|file>\n\tSets input and output modes: console or file\n\n");
+	if (iomode == ioConsole)
 	{
-		printf("a> (Enter operand 'a' here)\n");
-		printf("b> (Enter operand 'b' here)\n");
-		printf("o> (Enter operator here. Supported operators: '+', '-', '*', '/')\n\n");
-		printf("Example:\n");
-		printf("a> 25\n");
-		printf("b> 89\n");
-		printf("o> +\n\n");
-	}
-	else
-	{
-		printf("Enter operand 'a'\n");
-		printf("Enter operand 'b'\n");
-		printf("Enter operator. Supported operators: '+', '-', '*', '/'\n\n");
-		printf("Example:\n");
-		printf("25\n");
-		printf("89\n");
-		printf("+\n\n");
+		pConsoleHelp(clrmode);
 	}
 }
 
-inline int ReadParameters(int argc, char* argv[], char *clrmode)
+inline int ReadParameters(int argc, char* argv[], char *clrmode, enum ioMode *iomode)
 {
 	char paramsCorrect = 1; // Пока все хорошо
-							// Читаем аргументы командной строки
+	// Читаем аргументы командной строки
 	for (int i = 1; i < argc; i++)
 	{
 		char argCorrect = 0; // Пока аргумент не подошел ни под один обработчик 
-						  // Задание размера буферов для чисел
+		// Задание размера буферов для чисел
 		if (!strcmp(argv[i], "-bsize"))
 		{
 			argCorrect = 1;
@@ -150,6 +153,43 @@ inline int ReadParameters(int argc, char* argv[], char *clrmode)
 			argCorrect = 1;
 			*clrmode = 1;
 		}
+		// Откуда читаем и куда пишем: файл или консоль
+		if (!strcmp(argv[i], "-iomode"))
+		{
+			argCorrect = 1;
+			if (argc - 1 > i)
+			{
+				// Пока ввод считаем некорректным. Дальше разберемся
+				char ioModeCorrect = 0;
+				if (!strcmp(argv[i + 1], "console"))
+				{
+					ioModeCorrect = 1;
+					*iomode = ioConsole;
+				}
+				if (!strcmp(argv[i + 1], "file"))
+				{
+					ioModeCorrect = 1;
+					*iomode = ioFile;
+				}
+
+				if (!ioModeCorrect)
+				{
+					// Ввели некорректное значение
+					printf("Invalid mode \"%s\"\n", argv[i + 1]);
+					paramsCorrect = 0;
+					break;
+				}
+				// Перескакиваем через один аргумент - мы его уже учли
+				i++;
+			}
+			else
+			{
+				// Пропустили задание размера после аргумента -bsize
+				printf("I/O mode name is missing after \"-iomode\" argument\n");
+				paramsCorrect = 0;
+				break;
+			}
+		}
 		// А правильный ли вообще аргумент нам подкинули?
 		if (!argCorrect)
 		{
@@ -181,71 +221,4 @@ inline int Calculate(char *a, char *b, char *r, char op)
 			return 0; // Оператор неверный
 	}
 	return 1; // Все ок
-}
-
-inline int Input(char *a, char *b, char *op, char clrmode)
-{
-	while (1)
-	{
-		if (!clrmode)
-		{
-			printf("a> ");
-		}
-		scanf("%s", a);
-		if (!strncmp(a, "exit", 4))
-		{
-			return 1; // Код возврата, если прилетело "exit"
-		}
-		if (!strncmp(a, "help", 4))
-		{
-			return 2; // Код возврата, если прилетело "help"
-		}
-		if (!Validate(a))
-		{
-			printf("Invalid number a\n");
-			Erase(a);
-		}
-		else
-		{
-			break;
-		}
-	}
-
-	while (1)
-	{
-		if (!clrmode)
-		{
-			printf("b> ");
-		}
-		scanf("%s", b);
-		if (!Validate(b))
-		{
-			printf("Invalid number b\n");
-			Erase(b);
-		}
-		else
-		{
-			break;
-		}
-	}
-
-	while (1)
-	{
-		if (!clrmode)
-		{
-			printf("o> ");
-		}
-		getchar(); // Символ конца строки
-		scanf("%c", op);
-
-		if (*op == '+' || *op == '-' || *op == '*' || *op == '/')
-		{
-			break;
-		}
-		else
-		{
-			printf("Invalid operator\n");
-		}
-	}
-	return 0; // Введено все. Можно выполнять вычисления
 }
