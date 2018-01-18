@@ -100,50 +100,52 @@ void Negative(char *a)
 // Сравниваем два числа
 int Compare(const char *a, const char *b)
 {
-	char *_a, *_b;
-	_a = calloc(BufSize, 1);
-	_b = calloc(BufSize, 1);
-	memcpy(_a, a, BufSize);
-	memcpy(_b, b, BufSize);
-	ZeroTrim(_a);
-	ZeroTrim(_b);
-
-	int sna = Abs(_a);
-	int snb = Abs(_b);
-
-	size_t lna = strlen(_a);
-	size_t lnb = strlen(_b);
-	int res;
-
-	if (sna == snb)
+	int res = 0;
+	int sta = 0, stb = 0; // Стартовые индексы
+	signed char sga = 1, sgb = 1; // Знаки чисел. По дефолту все положительно
+	if (*a == '-')
 	{
-		if (lna != lnb)
-		{
-			res = lna > lnb ? 1 : -1;
-		}
-		else
-		{
-			int i = 0;
-			while (i < lna && *(_a + i) == *(_b + i))
-			{
-				i++;
-			}
-			res = *(_a + i) == *(_b + i) ? 0 : *(_a + i) > *(_b + i) ? 1 : -1;
-		}
-
-		if (sna)
-		{
-			res = -res;
-		}
+		sga = -1;
+		sta++;
 	}
-	else
+	if (*b == '-')
 	{
-		res = sna ? -1 : 1;
+		sgb = -1;
+		stb++;
+	}
+	if (sga != sgb)
+	{
+		return sga > sgb ? 1 : -1;
+	}
+	while (*(a + sta) == '0')
+	{
+		sta++;
+	}
+	while (*(b + stb) == '0')
+	{
+		stb++;
+	}
+	// Нашли, откуда числа начинаются
+	int lna = strlen(a) - sta;
+	int lnb = strlen(b) - stb;
+	char *enda = a + strlen(a);
+	char *endb = b + strlen(b);
+
+	if (lna != lnb)
+	{
+		return sga * (lna > lnb ? 1 : -1);
 	}
 
-
-	free(_b);
-	free(_a);
+	char *posa = a + sta, *posb = b + stb;
+	while (posa < enda && posb < endb)
+	{
+		if (*posa != *posb)
+		{
+			return sga * (*posa > *posb ? 1 : -1);
+		}
+		posa++;
+		posb++;
+	}
 	return res;
 }
 
