@@ -50,13 +50,16 @@ int main(int argc, char* argv[])
 		FILE *ofile = NULL;
 		while (!InitFiles(&ifile, &ofile)); // Повторяем, пока не получим валидные указатели на файлы
 		FileInput(ifile, a, b, &op);
-		if (Calculate(a, b, r, op))
+		switch (Calculate(a, b, r, op))
 		{
-			fprintf(ofile, "%s\n", r);
-		}
-		else
-		{
-			printf("Error\n");
+			case 1:
+				fprintf(ofile, "%s\n", r);
+				break;
+			case 2:
+				printf("Buffer size is too small\n");
+				break;
+			default:
+				printf("Error\n");
 		}
 		fclose(ofile);
 		fclose(ifile);
@@ -76,9 +79,18 @@ int main(int argc, char* argv[])
 				continue;
 			}
 
-			Calculate(a, b, r, op);
+			switch (Calculate(a, b, r, op))
+			{
+				case 1:
+					ConsoleOutput(r, clrmode);
+					break;
+				case 2:
+					printf("Buffer size is too small\n");
+					break;
+				default:
+					printf("Error\n");
+			}
 
-			ConsoleOutput(r, clrmode);
 			Erase(a);
 			Erase(b);
 			Erase(r);
@@ -212,7 +224,10 @@ inline int Calculate(char *a, char *b, char *r, char op)
 			Sub(a, b, r);
 			break;
 		case '*':
-			Mul(a, b, r);
+			if (!Mul(a, b, r))
+			{
+				return 2;
+			}
 			break;
 		case '/':
 			Div(a, b, r);

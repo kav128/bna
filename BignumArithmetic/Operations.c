@@ -250,12 +250,17 @@ void Sub(const char *a, const char *b, char *res)
 }
 
 // Умножение
-void Mul(const char *a, const char *b, char *res)
+int Mul(const char *a, const char *b, char *res)
 {
 	char *__a = calloc(BufSize, 1);
 	char *__b = calloc(BufSize, 1);
 	memcpy(__a, a, BufSize);
 	memcpy(__b, b, BufSize);
+	if (!CheckMultiplication(a, b))
+	{
+		return 0; // Не влезает в буфер
+	}
+
 	Erase(res);
 
 	char sga = Abs(__a);
@@ -268,6 +273,8 @@ void Mul(const char *a, const char *b, char *res)
 	}
 	free(__b);
 	free(__a);
+
+	return 1; // ОК
 }
 
 // Деление
@@ -289,4 +296,21 @@ void Div(const char *a, const char *b, char *res)
 	}
 	free(__b);
 	free(__a);
+}
+
+// Проверка вместимости буфера для результата.
+int CheckMultiplication(const char *a, const char *b)
+{
+	int ae = strlen(a) - 1;
+	int be = strlen(b) - 1;
+	int re = ae + be;
+	double am = *a - '0' + (ae > 0 ? (*(a + 1) + 1 - '0') / 10.0 : 0);
+	double bm = *b - '0' + (be > 0 ? (*(b + 1) + 1 - '0') / 10.0 : 0);
+	double rm = am * bm;
+	if (rm > 10)
+	{
+		rm /= 10;
+		re++;
+	}
+	return re + 1 <= BufSize;
 }
