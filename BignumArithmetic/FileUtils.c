@@ -4,49 +4,59 @@
 #include "Utils.h"
 #include "FileUtils.h"
 
-int InitFiles(FILE **in, FILE **out)
-{
-	char *inputFileName = malloc(255);
-	char *outputFileName = malloc(255);
+extern size_t BufSize;
 
-	printf("Input file name>\t");
-	scanf("%s", inputFileName);
-	*in = fopen(inputFileName, "r");
+int InitFiles(FILE **in, FILE **out, char *infn, char *outfn)
+{
+	*in = fopen(infn, "r");
 	if (*in == NULL)
 	{
-		printf("Unable to read file \"%s\"\n", inputFileName);
+		printf("Unable to read file \"%s\"\n", infn);
 		return 0;
 	}
 
-	printf("Output file name>\t");
-	scanf("%s", outputFileName);
-	*out = fopen(outputFileName, "w");
+	*out = fopen(outfn, "w");
 	if (*out == NULL)
 	{
-		printf("Unable to write to file \"%s\"\n", outputFileName);
+		printf("Unable to write to file \"%s\"\n", outfn);
 		return 0;
 	}
 
-	free(outputFileName);
-	free(inputFileName);
 	return 1;
 }
 
-int FileInput(FILE *file, char *a, char *b, char *op)
+int FileInput(FILE *file, bignum *a, bignum *b, char *op)
 {
-	fscanf(file, "%s", a);
-	if (!Validate(a))
+	char *inpbuf = calloc(BufSize, sizeof(char));
+	fscanf(file, "%s", inpbuf);
+	if (!Validate(inpbuf))
 	{
 		printf("Invalid numeric input\n");
 		return 0;
 	}
-	fscanf(file, "%s", b);
-	if (!Validate(b))
+	a->sign = Abs(inpbuf);
+	memcpy(a->absnum, inpbuf, BufSize);
+
+	fscanf(file, "%s", inpbuf);
+	if (!Validate(inpbuf))
 	{
 		printf("Invalid numeric input\n");
 		return 0;
 	}
+	b->sign = Abs(inpbuf);
+	memcpy(b->absnum, inpbuf, BufSize);
+
 	getc(file); // Символ конца строки
 	*op = getc(file);
+	free(inpbuf);
 	return 1;
+}
+
+void FileOutput(FILE *file, bignum r)
+{
+	if (r.sign && strcmp(r.absnum, "0"))
+	{
+		fprintf(file, "-");
+	}
+	fprintf(file, "%s\n", r.absnum);
 }

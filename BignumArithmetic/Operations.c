@@ -142,7 +142,7 @@ char DivSimple(char *a, char *b)
 	char i = 0;
 	while (Compare(a, b) >= 0)
 	{
-		Sub(a, b, a);
+		SubN(a, b, a);
 		i++;
 	}
 
@@ -168,165 +168,114 @@ void DivN(char *a, char *b, char *res)
 }
 
 // Сложение
-void Add(char *a, char *b, char *res)
+void Add(bignum a, bignum b, bignum *res)
 {
-	signed char sga = 0, sgb = 0; // Знаки чисел. По дефолту все положительно
-	if (*a == '-')
-	{
-		sga = 1;
-		a++;
-	}
-	if (*b == '-')
-	{
-		sgb = 1;
-		b++;
-	}
-
-	int sgn = sga << 1 | sgb;
-	int cmp = Compare(a, b);
+	int sgn = a.sign << 1 | b.sign;
+	int cmp = Compare(a.absnum, b.absnum);
 	switch (sgn)
 	{
 		case 0:
-			AddN(a, b, res);
+			AddN(a.absnum, b.absnum, res->absnum);
+			res->sign = 0;
 			break;
 		case 1:
 			if (cmp == 1)
 			{
-				SubN(a, b, res);
+				SubN(a.absnum, b.absnum, res->absnum);
+				res->sign = 0;
 			}
 			else
 			{
-				SubN(b, a, res);
-				Negative(res);
+				SubN(b.absnum, a.absnum, res->absnum);
+				res->sign = 1;
 			}
 			break;
 		case 2:
 			if (cmp == 1)
 			{
-				SubN(a, b, res);
-				Negative(res);
+				SubN(a.absnum, b.absnum, res->absnum);
+				res->sign = 1;
 			}
 			else
 			{
-				SubN(b, a, res);
+				SubN(b.absnum, a.absnum, res->absnum);
+				res->sign = 0;
 			}
 			break;
 		case 3:
-			AddN(a, b, res);
-			Negative(res);
+			AddN(a.absnum, b.absnum, res->absnum);
+			res->sign = 1;
 			break;
 	}
 
-	ZeroTrim(res);
+	ZeroTrim(res->absnum);
 }
 
 // Вычитание
-void Sub(char *a, char *b, char *res)
+void Sub(bignum a, bignum b, bignum *res)
 {
-	signed char sga = 0, sgb = 0; // Знаки чисел. По дефолту все положительно
-	if (*a == '-')
-	{
-		sga = 1;
-		a++;
-	}
-	if (*b == '-')
-	{
-		sgb = 1;
-		b++;
-	}
-
-	int sgn = sga << 1 | sgb;
-	int cmp = Compare(a, b);
+	int sgn = a.sign << 1 | b.sign;
+	int cmp = Compare(a.absnum, b.absnum);
 	switch (sgn)
 	{
 		case 0:
 			if (cmp == 1)
 			{
-				SubN(a, b, res);
+				SubN(a.absnum, b.absnum, res->absnum);
+				res->sign = 0;
 			}
 			else
 			{
-				SubN(b, a, res);
-				Negative(res);
+				SubN(b.absnum, a.absnum, res->absnum);
+				res->sign = 1;
 			}
 			break;
 		case 1:
-			AddN(a, b, res);
+			AddN(a.absnum, b.absnum, res->absnum);
+			res->sign = 0;
 			break;
 		case 2:
-			AddN(a, b, res);
-			Negative(res);
+			AddN(a.absnum, b.absnum, res->absnum);
+			res->sign = 1;
 			break;
 		case 3:
 			if (cmp == 1)
 			{
-				SubN(a, b, res);
-				Negative(res);
+				SubN(a.absnum, b.absnum, res->absnum);
+				res->sign = 1;
 			}
 			else
 			{
-				SubN(b, a, res);
+				SubN(b.absnum, a.absnum, res->absnum);
+				res->sign = 0;
 			}
 			break;
 	}
 
-	ZeroTrim(res);
+	ZeroTrim(res->absnum);
 }
 
 // Умножение
-int Mul(char *a, char *b, char *res)
+int Mul(bignum a, bignum b, bignum *res)
 {
-	if (!CheckMultiplication(a, b))
+	if (!CheckMultiplication(a.absnum, b.absnum))
 	{
 		return 0; // Не влезает в буфер
 	}
 
-	char *_a = a;
-	char *_b = b;
-	Erase(res);
-
-	char sga = *_a == '-' ? 1 : 0;
-	char sgb = *_b == '-' ? 1 : 0;
-	if (sga)
-	{
-		_a++;
-	}
-	if (sgb)
-	{
-		_b++;
-	}
-
-	MulN(_a, _b, res);
-	if (sga != sgb)
-	{
-		Negative(res);
-	}
+	Erase(res->absnum);
+	MulN(a.absnum, b.absnum, res->absnum);
+	res->sign = (a.sign != b.sign);
 
 	return 1; // ОК
 }
 
 // Деление
-void Div(char *a, char *b, char *res)
+void Div(bignum a, bignum b, bignum *res)
 {
-	Erase(res);
-
-	char sga = 0, sgb = 0;
-	if (*a == '-')
-	{
-		sga = 1;
-		a++;
-	}
-	if (*b == '-')
-	{
-		sgb = 1;
-		b++;
-	}
-
-	DivN(a, b, res);
-	if (sga != sgb)
-	{
-		Negative(res);
-	}
+	Erase(res->absnum);
+	DivN(a.absnum, b.absnum, res->absnum);
+	res->sign = (a.sign != b.sign);
 }
 
 // Проверка вместимости буфера для результата.

@@ -15,8 +15,8 @@ enum ioMode
 extern size_t BufSize;
 inline void pHeader();
 inline void pHelp(char clrmode, enum ioMode iomode);
-inline int Calculate(char *a, char *b, char *r, char op);
-inline int ReadParameters(int argc, char* argv[], char *clrmode, enum ioMode *iomode);
+inline int Calculate(bignum a, bignum b, bignum *r, char op);
+inline int ReadParameters(int argc, char* argv[], char *clrmode, enum ioMode *iomode, char **inputfilename, char **outputfilename);
 
 
 int main(int argc, char* argv[])
@@ -24,10 +24,13 @@ int main(int argc, char* argv[])
 	// По умолчанию читаем с консоли
 	enum ioMode curmode = ioConsole;
 	char clrmode = 0;
-	int pcorrect = ReadParameters(argc, argv, &clrmode, &curmode);
+
+	char *infn, *outfn; // Имена входного и выходного файлов
+	int pcorrect = ReadParameters(argc, argv, &clrmode, &curmode, &infn, &outfn);
 
 	if (!pcorrect)
 	{
+		printf("\n");
 		pHelp(clrmode, curmode);
 		return 0;
 	}
@@ -37,22 +40,26 @@ int main(int argc, char* argv[])
 		printf("Buffer size: %d bytes\n", BufSize);
 	}
 
-	char *a = calloc(BufSize, 1);
-	char *b = calloc(BufSize, 1);
-	char *r = calloc(BufSize, 1);
-
+	bignum a, b, r;
+	a.absnum = calloc(BufSize, 1);
+	b.absnum = calloc(BufSize, 1);
+	r.absnum = calloc(BufSize, 1);
 	char op;
 
 	if (curmode == ioFile)
 	{
 		FILE *ifile = NULL;
 		FILE *ofile = NULL;
-		while (!InitFiles(&ifile, &ofile)); // Повторяем, пока не получим валидные указатели на файлы
-		FileInput(ifile, a, b, &op);
-		switch (Calculate(a, b, r, op))
+		if (!InitFiles(&ifile, &ofile, infn, outfn))
+		{
+			return 0;
+		}
+		FileInput(ifile, &a, &b, &op);
+		switch (Calculate(a, b, &r, op))
 		{
 			case 1:
-				fprintf(ofile, "%s\n", r);
+				FileOutput(ofile, r);
+				printf("OK\n");
 				break;
 			case 2:
 				printf("Buffer size is too small\n");
@@ -67,7 +74,7 @@ int main(int argc, char* argv[])
 	{
 		while (1)
 		{
-			int inp = ConsoleInput(a, b, &op, clrmode);
+			int inp = ConsoleInput(&a, &b, &op, clrmode);
 			if (inp == 1)
 			{
 				break;
@@ -78,7 +85,7 @@ int main(int argc, char* argv[])
 				continue;
 			}
 
-			switch (Calculate(a, b, r, op))
+			switch (Calculate(a, b, &r, op))
 			{
 				case 1:
 					ConsoleOutput(r, clrmode);
@@ -90,22 +97,22 @@ int main(int argc, char* argv[])
 					printf("Error\n");
 			}
 
-			Erase(a);
-			Erase(b);
-			Erase(r);
+			Erase(a.absnum);
+			Erase(b.absnum);
+			Erase(r.absnum);
 		}
 	}
 
-	free(r);
-	free(b);
-	free(a);
+	free(r.absnum);
+	free(b.absnum);
+	free(a.absnum);
 	return 0;
 }
 
 inline void pHeader()
 {
 	printf("Bignum Arithmetic\n");
-	printf("Artem Krylov, M3105; ITMO University, St. Petersburg, 2017\n\n");
+	printf("Artem Krylov, M3105; ITMO University, St. Petersburg, 2017-2018\n\n");
 }
 
 inline void pHelp(char clrmode, enum ioMode iomode)
@@ -115,15 +122,20 @@ inline void pHelp(char clrmode, enum ioMode iomode)
 	printf("Options:\n");
 	printf("-bsize <n>\n\tSets size for string buffers\n");
 	printf("-clear\n\tTurns on \"clear mode\" - no prompts are displaying\n");
-	printf("-iomode <console|file>\n\tSets input and output modes: console or file\n\n");
+	printf("-iomode <console|file>\n\tSets input and output modes: console or file\n");
+	printf("-input <filename>\n\tSets input file name. Works only in file mode. Required argument if file mode is enabled\n");
+	printf("-output <filename>\n\tSets output file name. Works only in file mode. Required argument if file mode is enabled\n\n");
 	if (iomode == ioConsole)
 	{
 		pConsoleHelp(clrmode);
 	}
 }
 
-inline int ReadParameters(int argc, char* argv[], char *clrmode, enum ioMode *iomode)
+inline int ReadParameters(int argc, char* argv[], char *clrmode, enum ioMode *iomode, char **inputfilename, char **outputfilename)
 {
+	*inputfilename = NULL;
+	*outputfilename = NULL;
+	
 	char paramsCorrect = 1; // Пока все хорошо
 	// Читаем аргументы командной строки
 	for (int i = 1; i < argc; i++)
@@ -200,6 +212,54 @@ inline int ReadParameters(int argc, char* argv[], char *clrmode, enum ioMode *io
 				break;
 			}
 		}
+		// Задание имени входного файла
+		if (!strcmp(argv[i], "-input"))
+		{
+			argCorrect = 1;
+			if (*iomode != ioFile)
+			{
+				printf("File mode is not enabled. Cannot define input file name\n");
+				paramsCorrect = 0;
+				break;
+			}
+
+			if (argc - 1 > i)
+			{
+				*inputfilename = argv[i + 1];
+				// Перескакиваем через один аргумент - мы его уже учли
+				i++;
+			}
+			else
+			{
+				printf("Input file name is missing after \"-input\" argument\n");
+				paramsCorrect = 0;
+				break;
+			}
+		}
+		// Задание имени выходного файла
+		if (!strcmp(argv[i], "-output"))
+		{
+			argCorrect = 1;
+			if (*iomode != ioFile)
+			{
+				printf("File mode is not enabled. Cannot define output file name\n");
+				paramsCorrect = 0;
+				break;
+			}
+
+			if (argc - 1 > i)
+			{
+				*outputfilename = argv[i + 1];
+				// Перескакиваем через один аргумент - мы его уже учли
+				i++;
+			}
+			else
+			{
+				printf("Output file name is missing after \"-output\" argument\n");
+				paramsCorrect = 0;
+				break;
+			}
+		}
 		// А правильный ли вообще аргумент нам подкинули?
 		if (!argCorrect)
 		{
@@ -208,10 +268,16 @@ inline int ReadParameters(int argc, char* argv[], char *clrmode, enum ioMode *io
 		}
 	}
 
+	if (*iomode == ioFile && (*inputfilename == NULL || *outputfilename == NULL))
+	{
+		printf("Input file name or output file name is not defined. Cannot work in file mode\n");
+		paramsCorrect = 0;
+	}
+
 	return paramsCorrect;
 }
 
-inline int Calculate(char *a, char *b, char *r, char op)
+inline int Calculate(bignum a, bignum b, bignum *r, char op)
 {
 	switch (op)
 	{
