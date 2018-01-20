@@ -8,52 +8,53 @@ typedef signed char shortint;
 
 // Размер всех строк для хранения чисел и промежуточных вычислений
 size_t BufSize = 512;
-// Строки для локального хранения аргументов (чтобы не подпортить внешние данные)
-char *_a, *_b;
-// Вспомогательная строка
-char *p;
-
-void Initialize()
-{
-	_a = calloc(BufSize, 1);
-	_b = calloc(BufSize, 1);
-	p = malloc(BufSize);
-}
-
-void Finalize()
-{
-	free(p);
-	free(_b);
-	free(_a);
-}
 
 // "Нормализованное сложение", 0 <= a, b
-void AddN(char *res)
+void AddN(char *a, char *b, char *res)
 {
+	char *_a = calloc(2 * BufSize, sizeof(char));
+	char *_b = calloc(2 * BufSize, sizeof(char));
+	char *_r = calloc(2 * BufSize, sizeof(char));
+	memcpy(_a, a, BufSize);
+	memcpy(_b, b, BufSize);
+
 	size_t lna = strlen(_a);
 	size_t lnb = strlen(_b);
 	size_t ln = (lna > lnb ? lna : lnb) + 1;
 	AddZeros(_a, ln - lna);
 	AddZeros(_b, ln - lnb);
 
-	memset(p, 0, BufSize);
+	char *p = calloc(BufSize, sizeof(char));
 	for (int i = ln - 1; i >= 0; i--)
 	{
-		res[i] = *(_a + i) + *(_b + i) + *(p + i) - '0';
-		if (res[i] > '9')
+		*(_r + i) = *(_a + i) + *(_b + i) + *(p + i) - '0';
+		if (*(_r + i) > '9')
 		{
-			res[i] -= 10;
+			*(_r + i) -= 10;
 			if (i > 0)
 			{
 				*(p + i - 1) = 1;
 			}
 		}
 	}
+	ZeroTrim(_r);
+	memcpy(res, _r, BufSize);
+	*(res + BufSize - 1) = 0;
+
+	free(p);
+	free(_r);
+	free(_b);
+	free(_a);
 }
 
 // "Нормализованное" вычитание, 0 <= a <= b
-void SubN(char *res)
+void SubN(char *a, char *b, char *res)
 {
+	char *_a = calloc(BufSize, sizeof(char));
+	char *_b = calloc(BufSize, sizeof(char));
+	memcpy(_a, a, BufSize);
+	memcpy(_b, b, BufSize);
+
 	size_t ln = strlen(_a);
 	size_t lnb = strlen(_b);
 	AddZeros(_b, ln - lnb);
@@ -80,43 +81,59 @@ void SubN(char *res)
 		*(res + i) = '0' + rs;
 	}
 	free(_p);
+
+	free(_b);
+	free(_a);
 }
 
 // Умножение на однозначное число и добавление нескольких нулей в конец. Служебная функция
 void MulToIntN(const char *a, char b, char *res, size_t zeros)
 {
-	memcpy(_a, a, BufSize);
-	memset(p, 0, BufSize);
+	char *_a = calloc(2 * BufSize, sizeof(char));
+	char *p = calloc(2 * BufSize, sizeof(char));
+	char *_res = calloc(2 * BufSize, sizeof(char));
+	memcpy(_a, a, 2 * BufSize);
+	memset(_a + BufSize, 0, BufSize);
+	memset(p, 0, 2 * BufSize);
 	AddZeros(_a, 1);
 	size_t ln = strlen(_a);
 	for (int i = ln - 1; i >= 0; i--)
 	{
 		char rs = (*(_a + i) - '0') * b + *(p + i);
-		*(res + i) = rs % 10 + '0';
+		*(_res + i) = rs % 10 + '0';
 		if (i > 0)
 		{
 			*(p + i - 1) = rs / 10;
 		}
 	}
-	ZeroTrim(res);
+	ZeroTrim(_res);
 
-	ln = strlen(res);
-	memset(res + ln, '0', zeros);
+	ln = strlen(_res);
+	if (zeros > 0)
+	{
+		memset(_res + ln, '0', zeros);
+	}
+	memcpy(res, _res, BufSize);
+	*(res + BufSize - 1) = 0;
+	free(_res);
+	free(p);
+	free(_a);
 }
 
 // "Нормализованное" умножение, 0 <= a, b
 void MulN(const char *a, const char *b, char *res)
 {
+	char *p = calloc(2 * BufSize, sizeof(char));
 	Erase(res);
 	*res = '0';
 	size_t lnb = strlen(b);
-	memset(p, 0, BufSize);
 	for (int i = lnb - 1; i >= 0; i--)
 	{
+		Erase(p);
 		MulToIntN(a, *(b + i) - '0', p, lnb - i - 1);
-		Add(res, p, res);
+		AddN(res, p, res);
 	}
-	ZeroTrim(res);
+	free(p);
 }
 
 // Деление числа на число. Крайне медленный алгоритм. Должна применяться для деления на числа меньше 10. В a остается остаток
@@ -133,9 +150,9 @@ char DivSimple(char *a, char *b)
 }
 
 // "Нормализованное" деление, 0 <= b <= a
-void DivN(const char *a, const char *b, char *res)
+void DivN(char *a, char *b, char *res)
 {
-	memset(p, 0, BufSize);
+	char *p = calloc(BufSize, sizeof(char));
 	size_t lna = strlen(a);
 	size_t lnb = strlen(b);
 	char *rs = res;
@@ -147,51 +164,55 @@ void DivN(const char *a, const char *b, char *res)
 		*(rs++) = DivSimple(p, b) + '0';
 	}
 	ZeroTrim(res);
+	free(p);
 }
 
 // Сложение
-void Add(const char *a, const char *b, char *res)
+void Add(char *a, char *b, char *res)
 {
-	memcpy(_a, a, BufSize);
-	memcpy(_b, b, BufSize);
-	Erase(res);
+	signed char sga = 0, sgb = 0; // Знаки чисел. По дефолту все положительно
+	if (*a == '-')
+	{
+		sga = 1;
+		a++;
+	}
+	if (*b == '-')
+	{
+		sgb = 1;
+		b++;
+	}
 
-	ZeroTrim(_a);
-	ZeroTrim(_b);
-
-	int sgn = Abs(_a) << 1 | Abs(_b);
-	int cmp = Compare(_a, _b);
+	int sgn = sga << 1 | sgb;
+	int cmp = Compare(a, b);
 	switch (sgn)
 	{
 		case 0:
-			AddN(res);
+			AddN(a, b, res);
 			break;
 		case 1:
 			if (cmp == 1)
 			{
-				SubN(res);
+				SubN(a, b, res);
 			}
 			else
 			{
-				memswap(_a, _b, BufSize);
-				SubN(res);
+				SubN(b, a, res);
 				Negative(res);
 			}
 			break;
 		case 2:
 			if (cmp == 1)
 			{
-				SubN(res);
+				SubN(a, b, res);
 				Negative(res);
 			}
 			else
 			{
-				memswap(_a, _b, BufSize);
-				SubN(res);
+				SubN(b, a, res);
 			}
 			break;
 		case 3:
-			AddN(res);
+			AddN(a, b, res);
 			Negative(res);
 			break;
 	}
@@ -200,48 +221,51 @@ void Add(const char *a, const char *b, char *res)
 }
 
 // Вычитание
-void Sub(const char *a, const char *b, char *res)
+void Sub(char *a, char *b, char *res)
 {
-	memcpy(_a, a, BufSize);
-	memcpy(_b, b, BufSize);
-	Erase(res);
+	signed char sga = 0, sgb = 0; // Знаки чисел. По дефолту все положительно
+	if (*a == '-')
+	{
+		sga = 1;
+		a++;
+	}
+	if (*b == '-')
+	{
+		sgb = 1;
+		b++;
+	}
 
-	ZeroTrim(_a);
-	ZeroTrim(_b);
-
-	int sgn = Abs(_a) << 1 | Abs(_b);
-	int cmp = Compare(_a, _b);
+	int sgn = sga << 1 | sgb;
+	int cmp = Compare(a, b);
 	switch (sgn)
 	{
 		case 0:
 			if (cmp == 1)
 			{
-				SubN(res);
+				SubN(a, b, res);
 			}
 			else
 			{
-				memswap(_a, _b, BufSize);
-				SubN(res);
+				SubN(b, a, res);
 				Negative(res);
 			}
 			break;
 		case 1:
-			AddN(res);
+			AddN(a, b, res);
 			break;
 		case 2:
-			AddN(res);
+			AddN(a, b, res);
 			Negative(res);
 			break;
 		case 3:
 			if (cmp == 1)
 			{
-				SubN(res);
+				SubN(a, b, res);
 				Negative(res);
 			}
 			else
 			{
-				memswap(_a, _b, BufSize);
-				SubN(res);
+				SubN(b, a, res);
 			}
 			break;
 	}
@@ -250,56 +274,63 @@ void Sub(const char *a, const char *b, char *res)
 }
 
 // Умножение
-int Mul(const char *a, const char *b, char *res)
+int Mul(char *a, char *b, char *res)
 {
-	char *__a = calloc(BufSize, 1);
-	char *__b = calloc(BufSize, 1);
-	memcpy(__a, a, BufSize);
-	memcpy(__b, b, BufSize);
 	if (!CheckMultiplication(a, b))
 	{
 		return 0; // Не влезает в буфер
 	}
 
+	char *_a = a;
+	char *_b = b;
 	Erase(res);
 
-	char sga = Abs(__a);
-	char sgb = Abs(__b);
+	char sga = *_a == '-' ? 1 : 0;
+	char sgb = *_b == '-' ? 1 : 0;
+	if (sga)
+	{
+		_a++;
+	}
+	if (sgb)
+	{
+		_b++;
+	}
 
-	MulN(__a, __b, res);
+	MulN(_a, _b, res);
 	if (sga != sgb)
 	{
 		Negative(res);
 	}
-	free(__b);
-	free(__a);
 
 	return 1; // ОК
 }
 
 // Деление
-void Div(const char *a, const char *b, char *res)
+void Div(char *a, char *b, char *res)
 {
-	char *__a = calloc(BufSize, 1);
-	char *__b = calloc(BufSize, 1);
-	memcpy(__a, a, BufSize);
-	memcpy(__b, b, BufSize);
 	Erase(res);
 
-	char sga = Abs(__a);
-	char sgb = Abs(__b);
+	char sga = 0, sgb = 0;
+	if (*a == '-')
+	{
+		sga = 1;
+		a++;
+	}
+	if (*b == '-')
+	{
+		sgb = 1;
+		b++;
+	}
 
-	DivN(__a, __b, res);
+	DivN(a, b, res);
 	if (sga != sgb)
 	{
 		Negative(res);
 	}
-	free(__b);
-	free(__a);
 }
 
 // Проверка вместимости буфера для результата.
-int CheckMultiplication(const char *a, const char *b)
+int CheckMultiplication(char *a, char *b)
 {
 	int ae = strlen(a) - 1;
 	int be = strlen(b) - 1;
@@ -312,5 +343,5 @@ int CheckMultiplication(const char *a, const char *b)
 		rm /= 10;
 		re++;
 	}
-	return re + 1 <= BufSize;
+	return re + 1 < BufSize;
 }

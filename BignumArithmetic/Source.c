@@ -36,7 +36,6 @@ int main(int argc, char* argv[])
 	{
 		printf("Buffer size: %d bytes\n", BufSize);
 	}
-	Initialize();
 
 	char *a = calloc(BufSize, 1);
 	char *b = calloc(BufSize, 1);
@@ -100,7 +99,6 @@ int main(int argc, char* argv[])
 	free(r);
 	free(b);
 	free(a);
-	Finalize();
 	return 0;
 }
 
