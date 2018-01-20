@@ -6,31 +6,22 @@
 
 extern size_t BufSize;
 
-int InitFiles(FILE **in, FILE **out)
+int InitFiles(FILE **in, FILE **out, char *infn, char *outfn)
 {
-	char *inputFileName = malloc(255);
-	char *outputFileName = malloc(255);
-
-	printf("Input file name>\t");
-	scanf("%s", inputFileName);
-	*in = fopen(inputFileName, "r");
+	*in = fopen(infn, "r");
 	if (*in == NULL)
 	{
-		printf("Unable to read file \"%s\"\n", inputFileName);
+		printf("Unable to read file \"%s\"\n", infn);
 		return 0;
 	}
 
-	printf("Output file name>\t");
-	scanf("%s", outputFileName);
-	*out = fopen(outputFileName, "w");
+	*out = fopen(outfn, "w");
 	if (*out == NULL)
 	{
-		printf("Unable to write to file \"%s\"\n", outputFileName);
+		printf("Unable to write to file \"%s\"\n", outfn);
 		return 0;
 	}
 
-	free(outputFileName);
-	free(inputFileName);
 	return 1;
 }
 
