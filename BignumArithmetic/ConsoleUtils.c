@@ -4,6 +4,8 @@
 #include "Utils.h"
 #include "ConsoleUtils.h"
 
+extern size_t BufSize;
+
 void pConsoleHelp(char clrmode)
 {
 	printf("Console interface usage:\n");
@@ -29,30 +31,33 @@ void pConsoleHelp(char clrmode)
 	}
 }
 
-int ConsoleInput(char *a, char *b, char *op, char clrmode)
+int ConsoleInput(bignum *a, bignum *b, char *op, char clrmode)
 {
+	char *inpbuf = calloc(BufSize, sizeof(char));
 	while (1)
 	{
 		if (!clrmode)
 		{
 			printf("a> ");
 		}
-		scanf("%s", a);
-		if (!strncmp(a, "exit", 4))
+		scanf("%s", inpbuf);
+		if (!strncmp(inpbuf, "exit", 4))
 		{
 			return 1; // Код возврата, если прилетело "exit"
 		}
-		if (!strncmp(a, "help", 4))
+		if (!strncmp(inpbuf, "help", 4))
 		{
 			return 2; // Код возврата, если прилетело "help"
 		}
-		if (!Validate(a))
+		if (!Validate(inpbuf))
 		{
 			printf("Invalid number a\n");
-			Erase(a);
+			Erase(inpbuf);
 		}
 		else
 		{
+			a->sign = Abs(inpbuf);
+			memcpy(a->absnum, inpbuf, BufSize);
 			break;
 		}
 	}
@@ -63,14 +68,16 @@ int ConsoleInput(char *a, char *b, char *op, char clrmode)
 		{
 			printf("b> ");
 		}
-		scanf("%s", b);
-		if (!Validate(b))
+		scanf("%s", inpbuf);
+		if (!Validate(inpbuf))
 		{
 			printf("Invalid number b\n");
-			Erase(b);
+			Erase(inpbuf);
 		}
 		else
 		{
+			b->sign = Abs(inpbuf);
+			memcpy(b->absnum, inpbuf, BufSize);
 			break;
 		}
 	}
@@ -93,14 +100,19 @@ int ConsoleInput(char *a, char *b, char *op, char clrmode)
 			printf("Invalid operator\n");
 		}
 	}
+	free(inpbuf);
 	return 0; // Введено все. Можно выполнять вычисления
 }
 
-void ConsoleOutput(char *r, char clrmode)
+void ConsoleOutput(bignum r, char clrmode)
 {
 	if (!clrmode)
 	{
 		printf("Ans = ");
 	}
-	printf("%s\n", r);
+	if (r.sign && strcmp(r.absnum, "0"))
+	{
+		printf("-");
+	}
+	printf("%s\n", r.absnum);
 }

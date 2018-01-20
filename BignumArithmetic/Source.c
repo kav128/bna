@@ -15,7 +15,7 @@ enum ioMode
 extern size_t BufSize;
 inline void pHeader();
 inline void pHelp(char clrmode, enum ioMode iomode);
-inline int Calculate(char *a, char *b, char *r, char op);
+inline int Calculate(bignum a, bignum b, bignum *r, char op);
 inline int ReadParameters(int argc, char* argv[], char *clrmode, enum ioMode *iomode);
 
 
@@ -37,10 +37,10 @@ int main(int argc, char* argv[])
 		printf("Buffer size: %d bytes\n", BufSize);
 	}
 
-	char *a = calloc(BufSize, 1);
-	char *b = calloc(BufSize, 1);
-	char *r = calloc(BufSize, 1);
-
+	bignum a, b, r;
+	a.absnum = calloc(BufSize, 1);
+	b.absnum = calloc(BufSize, 1);
+	r.absnum = calloc(BufSize, 1);
 	char op;
 
 	if (curmode == ioFile)
@@ -48,11 +48,11 @@ int main(int argc, char* argv[])
 		FILE *ifile = NULL;
 		FILE *ofile = NULL;
 		while (!InitFiles(&ifile, &ofile)); // Повторяем, пока не получим валидные указатели на файлы
-		FileInput(ifile, a, b, &op);
-		switch (Calculate(a, b, r, op))
+		FileInput(ifile, &a, &b, &op);
+		switch (Calculate(a, b, &r, op))
 		{
 			case 1:
-				fprintf(ofile, "%s\n", r);
+				FileOutput(ofile, r);
 				break;
 			case 2:
 				printf("Buffer size is too small\n");
@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
 	{
 		while (1)
 		{
-			int inp = ConsoleInput(a, b, &op, clrmode);
+			int inp = ConsoleInput(&a, &b, &op, clrmode);
 			if (inp == 1)
 			{
 				break;
@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
 				continue;
 			}
 
-			switch (Calculate(a, b, r, op))
+			switch (Calculate(a, b, &r, op))
 			{
 				case 1:
 					ConsoleOutput(r, clrmode);
@@ -90,15 +90,15 @@ int main(int argc, char* argv[])
 					printf("Error\n");
 			}
 
-			Erase(a);
-			Erase(b);
-			Erase(r);
+			Erase(a.absnum);
+			Erase(b.absnum);
+			Erase(r.absnum);
 		}
 	}
 
-	free(r);
-	free(b);
-	free(a);
+	free(r.absnum);
+	free(b.absnum);
+	free(a.absnum);
 	return 0;
 }
 
@@ -211,7 +211,7 @@ inline int ReadParameters(int argc, char* argv[], char *clrmode, enum ioMode *io
 	return paramsCorrect;
 }
 
-inline int Calculate(char *a, char *b, char *r, char op)
+inline int Calculate(bignum a, bignum b, bignum *r, char op)
 {
 	switch (op)
 	{
