@@ -131,6 +131,89 @@ inline void pHelp(char clrmode, enum ioMode iomode)
 	}
 }
 
+inline int ReadIntParameter(int argc, char *argv[], int *curnum, char *parametername, char description, int *val)
+{
+	if (argc - 1> *curnum)
+	{
+		if (Validate(argv[*curnum + 1]))
+		{
+			*val = atoi(argv[*curnum + 1]);
+			// Перескакиваем через один аргумент - мы его уже учли
+			*curnum++;
+		}
+		else
+		{
+			// Ввели некорректное число
+			printf("Invalid numberic input \"%s\"\n", argv[*curnum + 1]);
+			return 0;
+		}
+	}
+	else
+	{
+		// Пропустили задание размера после аргумента -bsize
+		printf("%s is missing after \"%s\" argument\n", description, parametername);
+		return 0;
+	}
+	return 1;
+}
+
+inline int ReadIoModeParameter(int argc, char *argv[], int *curnum, char *parametername, char description, enum ioMode *val)
+{
+	if (argc - 1 > *curnum)
+	{
+		// Пока ввод считаем некорректным. Дальше разберемся
+		char ioModeCorrect = 0;
+		if (!strcmp(argv[*curnum + 1], "console"))
+		{
+			ioModeCorrect = 1;
+			*val = ioConsole;
+		}
+		if (!strcmp(argv[*curnum + 1], "file"))
+		{
+			ioModeCorrect = 1;
+			*val = ioFile;
+		}
+
+		if (!ioModeCorrect)
+		{
+			// Ввели некорректное значение
+			printf("Invalid mode \"%s\"\n", argv[*curnum + 1]);
+			return 0;
+		}
+		// Перескакиваем через один аргумент - мы его уже учли
+		*curnum++;
+	}
+	else
+	{
+		// Пропустили задание размера после аргумента -bsize
+		printf("%s is missing after \"%s\" argument\n", description, parametername);
+		return 0;
+	}
+	return 1;
+}
+
+inline int ReadFilenameParameter(int argc, char *argv[], int *curnum, char *parametername, char description, enum ioMode iomode, char **val)
+{
+	if (iomode != ioFile)
+	{
+		printf("File mode is not enabled. Cannot define %s\n", description);
+		return 0;
+	}
+
+	if (argc - 1 > *curnum)
+	{
+		*val = argv[*curnum + 1];
+		// Перескакиваем через один аргумент - мы его уже учли
+		*curnum++;
+	}
+	else
+	{
+		printf("%s is missing after \"%s\" argument\n", description, parametername);
+		return 0;
+	}
+	return 1;
+}
+
 inline int ReadParameters(int argc, char* argv[], char *clrmode, enum ioMode *iomode, char **inputfilename, char **outputfilename)
 {
 	*inputfilename = NULL;
@@ -145,29 +228,7 @@ inline int ReadParameters(int argc, char* argv[], char *clrmode, enum ioMode *io
 		if (!strcmp(argv[i], "-bsize"))
 		{
 			argCorrect = 1;
-			if (argc - 1> i)
-			{
-				if (Validate(argv[i + 1]))
-				{
-					BufSize = atoi(argv[i + 1]);
-					// Перескакиваем через один аргумент - мы его уже учли
-					i++;
-				}
-				else
-				{
-					// Ввели некорректное число
-					printf("Invalid numberic input \"%s\"\n", argv[i + 1]);
-					paramsCorrect = 0;
-					break;
-				}
-			}
-			else
-			{
-				// Пропустили задание размера после аргумента -bsize
-				printf("Buffer size is missing after \"-bsize\" argument\n");
-				paramsCorrect = 0;
-				break;
-			}
+			paramsCorrect = ReadIntParameter(argc, argv, &i, "-bsize", "Buffer size", &BufSize);
 		}
 		// "Чистый вывод" - только результаты вычислений или сообщения об ошибках. Справка работает, если запрошена
 		if (!strcmp(argv[i], "-clear"))
@@ -179,86 +240,19 @@ inline int ReadParameters(int argc, char* argv[], char *clrmode, enum ioMode *io
 		if (!strcmp(argv[i], "-iomode"))
 		{
 			argCorrect = 1;
-			if (argc - 1 > i)
-			{
-				// Пока ввод считаем некорректным. Дальше разберемся
-				char ioModeCorrect = 0;
-				if (!strcmp(argv[i + 1], "console"))
-				{
-					ioModeCorrect = 1;
-					*iomode = ioConsole;
-				}
-				if (!strcmp(argv[i + 1], "file"))
-				{
-					ioModeCorrect = 1;
-					*iomode = ioFile;
-				}
-
-				if (!ioModeCorrect)
-				{
-					// Ввели некорректное значение
-					printf("Invalid mode \"%s\"\n", argv[i + 1]);
-					paramsCorrect = 0;
-					break;
-				}
-				// Перескакиваем через один аргумент - мы его уже учли
-				i++;
-			}
-			else
-			{
-				// Пропустили задание размера после аргумента -bsize
-				printf("I/O mode name is missing after \"-iomode\" argument\n");
-				paramsCorrect = 0;
-				break;
-			}
+			paramsCorrect = ReadIoModeParameter(argc, argv, &i, "-iomode", "I/O mode name", iomode, inputfilename);
 		}
 		// Задание имени входного файла
 		if (!strcmp(argv[i], "-input"))
 		{
 			argCorrect = 1;
-			if (*iomode != ioFile)
-			{
-				printf("File mode is not enabled. Cannot define input file name\n");
-				paramsCorrect = 0;
-				break;
-			}
-
-			if (argc - 1 > i)
-			{
-				*inputfilename = argv[i + 1];
-				// Перескакиваем через один аргумент - мы его уже учли
-				i++;
-			}
-			else
-			{
-				printf("Input file name is missing after \"-input\" argument\n");
-				paramsCorrect = 0;
-				break;
-			}
+			paramsCorrect = ReadFilenameParameter(argc, argv, &i, "-input", "input filename", iomode, inputfilename);
 		}
 		// Задание имени выходного файла
 		if (!strcmp(argv[i], "-output"))
 		{
 			argCorrect = 1;
-			if (*iomode != ioFile)
-			{
-				printf("File mode is not enabled. Cannot define output file name\n");
-				paramsCorrect = 0;
-				break;
-			}
-
-			if (argc - 1 > i)
-			{
-				*outputfilename = argv[i + 1];
-				// Перескакиваем через один аргумент - мы его уже учли
-				i++;
-			}
-			else
-			{
-				printf("Output file name is missing after \"-output\" argument\n");
-				paramsCorrect = 0;
-				break;
-			}
+			paramsCorrect = ReadFilenameParameter(argc, argv, &i, "-output", "output filename", iomode, outputfilename);
 		}
 		// А правильный ли вообще аргумент нам подкинули?
 		if (!argCorrect)
