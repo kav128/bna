@@ -26,7 +26,7 @@ void ZeroTrim(char *str)
 
 	memcpy(str, str + shift, len - shift);
 	// Зануляем байты в конце строки
-	memset(str + len, 0, shift);
+	memset(str + len - shift, 0, shift);
 }
 
 // Добавляем лидирующие нули

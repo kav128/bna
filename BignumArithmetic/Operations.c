@@ -14,6 +14,7 @@ size_t BufSize = 512;
 // "Нормализованное сложение", 0 <= a, b
 void AddN(char *a, char *b, char *res)
 {
+	Erase(res);
 	size_t lna = strlen(a);
 	size_t lnb = strlen(b);
 	char *ca = a + lna - 1;
@@ -37,6 +38,7 @@ void AddN(char *a, char *b, char *res)
 // "Нормализованное" вычитание, 0 <= b <= a
 void SubN(char *a, char *b, char *res)
 {
+	Erase(res);
 	size_t lna = strlen(a);
 	size_t lnb = strlen(b);
 	char *ca = a + lna - 1;
@@ -105,7 +107,6 @@ char DivSimple(char *a, char *b, char *tmp)
 	char i = 0;
 	while (Compare(a, b) >= 0)
 	{
-		Erase(tmp);
 		SubN(a, b, tmp);
 		memcpy(a, tmp, BufSize);
 		i++;
