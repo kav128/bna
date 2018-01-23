@@ -12,39 +12,23 @@ size_t BufSize = 512;
 // "Нормализованное сложение", 0 <= a, b
 void AddN(char *a, char *b, char *res)
 {
-	char *_a = calloc(2 * BufSize, sizeof(char));
-	char *_b = calloc(2 * BufSize, sizeof(char));
-	char *_r = calloc(2 * BufSize, sizeof(char));
-	memcpy(_a, a, BufSize);
-	memcpy(_b, b, BufSize);
-
-	size_t lna = strlen(_a);
-	size_t lnb = strlen(_b);
-	size_t ln = (lna > lnb ? lna : lnb) + 1;
-	AddZeros(_a, ln - lna);
-	AddZeros(_b, ln - lnb);
-
-	char *p = calloc(BufSize, sizeof(char));
-	for (int i = ln - 1; i >= 0; i--)
+	size_t lna = strlen(a);
+	size_t lnb = strlen(b);
+	char *ca = a + lna - 1;
+	char *cb = b + lnb - 1;
+	char *cr = res + (lna > lnb ? lna : lnb);
+	unsigned char p = 0;
+	unsigned char r = 0;
+	do
 	{
-		*(_r + i) = *(_a + i) + *(_b + i) + *(p + i) - '0';
-		if (*(_r + i) > '9')
-		{
-			*(_r + i) -= 10;
-			if (i > 0)
-			{
-				*(p + i - 1) = 1;
-			}
-		}
+		r = (ca >= a ? (*ca - '0') : 0) + (cb >= b ? (*cb - '0') : 0) + p;
+		*cr = r % 10 + '0';
+		p = r / 10;
+		cr--;
+		cb--;
+		ca--;
 	}
-	ZeroTrim(_r);
-	memcpy(res, _r, BufSize);
-	*(res + BufSize - 1) = 0;
-
-	free(p);
-	free(_r);
-	free(_b);
-	free(_a);
+	while (cr >= res);
 }
 
 // "Нормализованное" вычитание, 0 <= a <= b
