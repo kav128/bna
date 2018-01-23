@@ -31,20 +31,18 @@ void AddN(char *a, char *b, char *res)
 	while (cr >= res);
 }
 
-// "Нормализованное" вычитание, 0 <= a <= b
+// "Нормализованное" вычитание, 0 <= b <= a
 void SubN(char *a, char *b, char *res)
 {
-	char *_a = calloc(BufSize, sizeof(char));
-	char *_b = calloc(BufSize, sizeof(char));
-	memcpy(_a, a, BufSize);
-	memcpy(_b, b, BufSize);
-
-	size_t ln = strlen(_a);
-	size_t lnb = strlen(_b);
-	AddZeros(_b, ln - lnb);
-
-	shortint *_p = calloc(ln, sizeof(shortint));
-	for (int i = ln - 1; i >= 0; i--)
+	size_t lna = strlen(a);
+	size_t lnb = strlen(b);
+	char *ca = a + lna - 1;
+	char *cb = b + lnb - 1;
+	char *cr = res + (lna > lnb ? lna : lnb);
+	shortint r = 0;
+	shortint *p = calloc(BufSize, sizeof(shortint));
+	shortint *cp = p + (lna > lnb ? lna : lnb);
+	do
 	{
 		shortint rs = *(_a + i) - *(_b + i) + *(_p + i);
 		if (rs < 0)
@@ -64,10 +62,7 @@ void SubN(char *a, char *b, char *res)
 		}
 		*(res + i) = '0' + rs;
 	}
-	free(_p);
-
-	free(_b);
-	free(_a);
+	while (cr >= res);
 }
 
 // Умножение на однозначное число и добавление нескольких нулей в конец. Служебная функция
