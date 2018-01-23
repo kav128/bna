@@ -31,6 +31,7 @@ void AddN(char *a, char *b, char *res)
 		ca--;
 	}
 	while (cr >= res);
+	ZeroTrim(res);
 }
 
 // "Нормализованное" вычитание, 0 <= b <= a
@@ -42,19 +43,18 @@ void SubN(char *a, char *b, char *res)
 	char *cb = b + lnb - 1;
 	char *cr = res + (lna > lnb ? lna : lnb);
 	shortint r = 0;
-	shortint *p = calloc(BufSize, sizeof(shortint));
-	shortint *cp = p + (lna > lnb ? lna : lnb);
+	shortint p = 0;
 	do
 	{
-		r = (ca >= a ? *ca - '0' : 0) - (cb >= b ? *cb - '0' : 0) + *cp;
-		cp--;
+		r = (ca >= a ? *ca - '0' : 0) - (cb >= b ? *cb - '0' : 0) + p;
 		*cr = (r < 0 ? r + 10 : r) + '0';
-		*cp = r < 0 ? -1 : 0;
+		p = r < 0 ? -1 : 0;
 		cr--;
 		cb--;
 		ca--;
 	}
 	while (cr >= res);
+	ZeroTrim(res);
 }
 
 // Умножение на однозначное число и добавление нескольких нулей в конец. Служебная функция
@@ -100,12 +100,14 @@ void MulN(const char *a, const char *b, char *res)
 }
 
 // Деление числа на число. Крайне медленный алгоритм. Должна применяться для деления на числа меньше 10. В a остается остаток
-char DivSimple(char *a, char *b)
+char DivSimple(char *a, char *b, char *tmp)
 {
 	char i = 0;
 	while (Compare(a, b) >= 0)
 	{
-		SubN(a, b, a);
+		Erase(tmp);
+		SubN(a, b, tmp);
+		memcpy(a, tmp, BufSize);
 		i++;
 	}
 
@@ -120,12 +122,14 @@ void DivN(char *a, char *b, char *res)
 	size_t lnb = strlen(b);
 	char *rs = res;
 	memcpy(p, a, lnb);
-	*(rs++) = DivSimple(p, b) + '0';
+	char *tmp = calloc(BufSize, sizeof(char));
+	*(rs++) = DivSimple(p, b, tmp) + '0';
 	for (int i = lnb; i < lna; i++)
 	{
 		*(p + strlen(p)) = *(a + i);
-		*(rs++) = DivSimple(p, b) + '0';
+		*(rs++) = DivSimple(p, b, tmp) + '0';
 	}
+	free(tmp);
 	ZeroTrim(res);
 	free(p);
 }
@@ -170,8 +174,6 @@ void Add(bignum a, bignum b, bignum *res)
 			res->sign = 1;
 			break;
 	}
-
-	ZeroTrim(res->absnum);
 }
 
 // Вычитание
@@ -214,8 +216,6 @@ void Sub(bignum a, bignum b, bignum *res)
 			}
 			break;
 	}
-
-	ZeroTrim(res->absnum);
 }
 
 // Умножение
