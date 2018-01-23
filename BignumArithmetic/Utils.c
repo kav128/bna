@@ -9,22 +9,24 @@ extern size_t BufSize;
 void ZeroTrim(char *str)
 {
 	size_t shift = 0;
-	// Вдруг число отрицательное
-	int start = *str == '-' ? 1 : 0;
+	*(str + BufSize - 1) = 0; // Должна же строка нулем заканчиваться. А вдруг не заканчивается?
 	size_t len = strlen(str) + 1;
-	while (*(str + start + shift) == '0')
+	while (*(str + shift) == '0')
 	{
 		shift++;
 	}
-	if (shift == len - start - 1)
+	if (shift == len - 1)
 	{
 		shift--;
 	}
+	if (shift == 0)
+	{
+		return;
+	}
 
-	memcpy(str + start, str + start + shift, len - shift);
-	len -= shift;
+	memcpy(str, str + shift, len - shift);
 	// Зануляем байты в конце строки
-	memset(str + start + len, 0, len);
+	memset(str + len - shift, 0, shift);
 }
 
 // Добавляем лидирующие нули
@@ -156,5 +158,37 @@ void memswap(char *a, char *b, size_t len)
 		*(a + i) ^= *(b + i);
 		*(b + i) ^= *(a + i);
 		*(a + i) ^= *(b + i);
+	}
+}
+
+//Считаем размер буфера для вычислений. Значение берем с небольшим запасом
+int CalcBufSize(char *a, char *b, char op)
+{
+	int ae = strlen(a) - 1;
+	int be = strlen(b) - 1;
+	double am = *a - '0' + (ae > 0 ? (*(a + 1) + 1 - '0') / 10.0 : 0);
+	double bm = *b - '0' + (be > 0 ? (*(b + 1) + 1 - '0') / 10.0 : 0);
+
+	if (op == '+' || op == '-')
+	{
+		return (int)(1.05 * (ae > be ? ae : be) + 4);
+	}
+
+	if (op == '*')
+	{
+		int re = ae + be;
+		double rm = am * bm;
+		if (rm > 10)
+		{
+			rm /= 10;
+			re++;
+		}
+
+		return (int)(1.1 * re + 4);
+	}
+
+	if (op == '/')
+	{
+		return ae + 4;
 	}
 }

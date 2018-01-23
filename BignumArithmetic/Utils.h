@@ -16,5 +16,6 @@ char Abs(char *a);
 void Negative(char *a);
 int Compare(const char *a, const char *b);
 void memswap(char *a, char *b, size_t len);
+int CalcBufSize(char *a, char *b, char op);
 
 #endif //BIGNUM_UTILS_H

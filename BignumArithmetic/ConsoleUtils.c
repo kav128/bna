@@ -41,11 +41,11 @@ int ConsoleInput(bignum *a, bignum *b, char *op, char clrmode)
 			printf("a> ");
 		}
 		scanf("%s", inpbuf);
-		if (!strncmp(inpbuf, "exit", 4))
+		if (!strcmp(inpbuf, "exit"))
 		{
 			return 1; // Код возврата, если прилетело "exit"
 		}
-		if (!strncmp(inpbuf, "help", 4))
+		if (!strcmp(inpbuf, "help"))
 		{
 			return 2; // Код возврата, если прилетело "help"
 		}

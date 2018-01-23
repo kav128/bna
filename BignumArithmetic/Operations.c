@@ -6,118 +6,82 @@
 
 typedef signed char shortint;
 
+// Размер буфера ввода
+size_t ISize = 512;
 // Размер всех строк для хранения чисел и промежуточных вычислений
 size_t BufSize = 512;
 
 // "Нормализованное сложение", 0 <= a, b
 void AddN(char *a, char *b, char *res)
 {
-	char *_a = calloc(2 * BufSize, sizeof(char));
-	char *_b = calloc(2 * BufSize, sizeof(char));
-	char *_r = calloc(2 * BufSize, sizeof(char));
-	memcpy(_a, a, BufSize);
-	memcpy(_b, b, BufSize);
-
-	size_t lna = strlen(_a);
-	size_t lnb = strlen(_b);
-	size_t ln = (lna > lnb ? lna : lnb) + 1;
-	AddZeros(_a, ln - lna);
-	AddZeros(_b, ln - lnb);
-
-	char *p = calloc(BufSize, sizeof(char));
-	for (int i = ln - 1; i >= 0; i--)
+	Erase(res);
+	size_t lna = strlen(a);
+	size_t lnb = strlen(b);
+	char *ca = a + lna - 1;
+	char *cb = b + lnb - 1;
+	char *cr = res + (lna > lnb ? lna : lnb);
+	unsigned char p = 0;
+	unsigned char r = 0;
+	do
 	{
-		*(_r + i) = *(_a + i) + *(_b + i) + *(p + i) - '0';
-		if (*(_r + i) > '9')
-		{
-			*(_r + i) -= 10;
-			if (i > 0)
-			{
-				*(p + i - 1) = 1;
-			}
-		}
+		r = (ca >= a ? (*ca - '0') : 0) + (cb >= b ? (*cb - '0') : 0) + p;
+		*cr = r % 10 + '0';
+		p = r / 10;
+		cr--;
+		cb--;
+		ca--;
 	}
-	ZeroTrim(_r);
-	memcpy(res, _r, BufSize);
-	*(res + BufSize - 1) = 0;
-
-	free(p);
-	free(_r);
-	free(_b);
-	free(_a);
+	while (cr >= res);
+	ZeroTrim(res);
 }
 
-// "Нормализованное" вычитание, 0 <= a <= b
+// "Нормализованное" вычитание, 0 <= b <= a
 void SubN(char *a, char *b, char *res)
 {
-	char *_a = calloc(BufSize, sizeof(char));
-	char *_b = calloc(BufSize, sizeof(char));
-	memcpy(_a, a, BufSize);
-	memcpy(_b, b, BufSize);
-
-	size_t ln = strlen(_a);
-	size_t lnb = strlen(_b);
-	AddZeros(_b, ln - lnb);
-
-	shortint *_p = calloc(ln, sizeof(shortint));
-	for (int i = ln - 1; i >= 0; i--)
+	Erase(res);
+	size_t lna = strlen(a);
+	size_t lnb = strlen(b);
+	char *ca = a + lna - 1;
+	char *cb = b + lnb - 1;
+	char *cr = res + (lna > lnb ? lna : lnb);
+	shortint r = 0;
+	shortint p = 0;
+	do
 	{
-		shortint rs = *(_a + i) - *(_b + i) + *(_p + i);
-		if (rs < 0)
-		{
-			rs += 10;
-			int j = i;
-			do
-			{
-				j--;
-			} while (*(_a + j) == '0');
-			*(_p + j++) = -1;
-			for (; j < i; j++)
-			{
-				*(_p + j) = 9;
-			}
-
-		}
-		*(res + i) = '0' + rs;
+		r = (ca >= a ? *ca - '0' : 0) - (cb >= b ? *cb - '0' : 0) + p;
+		*cr = (r < 0 ? r + 10 : r) + '0';
+		p = r < 0 ? -1 : 0;
+		cr--;
+		cb--;
+		ca--;
 	}
-	free(_p);
-
-	free(_b);
-	free(_a);
+	while (cr >= res);
+	ZeroTrim(res);
 }
 
 // Умножение на однозначное число и добавление нескольких нулей в конец. Служебная функция
 void MulToIntN(const char *a, char b, char *res, size_t zeros)
 {
-	char *_a = calloc(2 * BufSize, sizeof(char));
-	char *p = calloc(2 * BufSize, sizeof(char));
-	char *_res = calloc(2 * BufSize, sizeof(char));
-	memcpy(_a, a, 2 * BufSize);
-	memset(_a + BufSize, 0, BufSize);
-	memset(p, 0, 2 * BufSize);
-	AddZeros(_a, 1);
-	size_t ln = strlen(_a);
-	for (int i = ln - 1; i >= 0; i--)
+	size_t lna = strlen(a);
+	char *ca = a + lna - 1;
+	char *cr = res + lna + zeros;
+	while (cr > res + lna)
 	{
-		char rs = (*(_a + i) - '0') * b + *(p + i);
-		*(_res + i) = rs % 10 + '0';
-		if (i > 0)
-		{
-			*(p + i - 1) = rs / 10;
-		}
+		*cr = '0';
+		cr--;
 	}
-	ZeroTrim(_res);
-
-	ln = strlen(_res);
-	if (zeros > 0)
+	unsigned char p = 0;
+	unsigned char r = 0;
+	do
 	{
-		memset(_res + ln, '0', zeros);
+		r = (ca >= a ? (*ca - '0') : 0) * b + p;
+		*cr = r % 10 + '0';
+		p = r / 10;
+		cr--;
+		ca--;
 	}
-	memcpy(res, _res, BufSize);
-	*(res + BufSize - 1) = 0;
-	free(_res);
-	free(p);
-	free(_a);
+	while (cr >= res);
+	ZeroTrim(res);
 }
 
 // "Нормализованное" умножение, 0 <= a, b
@@ -133,16 +97,18 @@ void MulN(const char *a, const char *b, char *res)
 		MulToIntN(a, *(b + i) - '0', p, lnb - i - 1);
 		AddN(res, p, res);
 	}
+	ZeroTrim(res);
 	free(p);
 }
 
 // Деление числа на число. Крайне медленный алгоритм. Должна применяться для деления на числа меньше 10. В a остается остаток
-char DivSimple(char *a, char *b)
+char DivSimple(char *a, char *b, char *tmp)
 {
 	char i = 0;
 	while (Compare(a, b) >= 0)
 	{
-		SubN(a, b, a);
+		SubN(a, b, tmp);
+		memcpy(a, tmp, BufSize);
 		i++;
 	}
 
@@ -157,12 +123,14 @@ void DivN(char *a, char *b, char *res)
 	size_t lnb = strlen(b);
 	char *rs = res;
 	memcpy(p, a, lnb);
-	*(rs++) = DivSimple(p, b) + '0';
+	char *tmp = calloc(BufSize, sizeof(char));
+	*(rs++) = DivSimple(p, b, tmp) + '0';
 	for (int i = lnb; i < lna; i++)
 	{
 		*(p + strlen(p)) = *(a + i);
-		*(rs++) = DivSimple(p, b) + '0';
+		*(rs++) = DivSimple(p, b, tmp) + '0';
 	}
+	free(tmp);
 	ZeroTrim(res);
 	free(p);
 }
@@ -207,8 +175,6 @@ void Add(bignum a, bignum b, bignum *res)
 			res->sign = 1;
 			break;
 	}
-
-	ZeroTrim(res->absnum);
 }
 
 // Вычитание
@@ -251,8 +217,6 @@ void Sub(bignum a, bignum b, bignum *res)
 			}
 			break;
 	}
-
-	ZeroTrim(res->absnum);
 }
 
 // Умножение

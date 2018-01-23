@@ -13,6 +13,7 @@ enum ioMode
 	ioConsole, ioFile
 };
 extern size_t BufSize;
+extern size_t ISize;
 inline void pHeader();
 inline void pHelp(char clrmode, enum ioMode iomode);
 inline int Calculate(bignum a, bignum b, bignum *r, char op);
@@ -41,9 +42,8 @@ int main(int argc, char* argv[])
 	}
 
 	bignum a, b, r;
-	a.absnum = calloc(BufSize, 1);
-	b.absnum = calloc(BufSize, 1);
-	r.absnum = calloc(BufSize, 1);
+	a.absnum = calloc(ISize, sizeof(char));
+	b.absnum = calloc(ISize, sizeof(char));
 	char op;
 
 	if (curmode == ioFile)
@@ -55,6 +55,8 @@ int main(int argc, char* argv[])
 			return 0;
 		}
 		FileInput(ifile, &a, &b, &op);
+		BufSize = CalcBufSize(a.absnum, b.absnum, op);
+		r.absnum = calloc(BufSize, sizeof(char));
 		switch (Calculate(a, b, &r, op))
 		{
 			case 1:
@@ -69,6 +71,7 @@ int main(int argc, char* argv[])
 		}
 		fclose(ofile);
 		fclose(ifile);
+		free(r.absnum);
 	}
 	else
 	{
@@ -85,6 +88,8 @@ int main(int argc, char* argv[])
 				continue;
 			}
 
+			BufSize = CalcBufSize(a.absnum, b.absnum, op);
+			r.absnum = calloc(BufSize, sizeof(char));
 			switch (Calculate(a, b, &r, op))
 			{
 				case 1:
@@ -97,13 +102,12 @@ int main(int argc, char* argv[])
 					printf("Error\n");
 			}
 
+			free(r.absnum);
 			Erase(a.absnum);
 			Erase(b.absnum);
-			Erase(r.absnum);
 		}
 	}
 
-	free(r.absnum);
 	free(b.absnum);
 	free(a.absnum);
 	return 0;
@@ -131,7 +135,7 @@ inline void pHelp(char clrmode, enum ioMode iomode)
 	}
 }
 
-inline int ReadIntParameter(int argc, char *argv[], int *curnum, char *parametername, char description, int *val)
+inline int ReadIntParameter(int argc, char *argv[], int *curnum, char *parametername, char *description, int *val)
 {
 	if (argc - 1> *curnum)
 	{
@@ -139,7 +143,7 @@ inline int ReadIntParameter(int argc, char *argv[], int *curnum, char *parameter
 		{
 			*val = atoi(argv[*curnum + 1]);
 			// Перескакиваем через один аргумент - мы его уже учли
-			*curnum++;
+			(*curnum)++;
 		}
 		else
 		{
@@ -157,7 +161,7 @@ inline int ReadIntParameter(int argc, char *argv[], int *curnum, char *parameter
 	return 1;
 }
 
-inline int ReadIoModeParameter(int argc, char *argv[], int *curnum, char *parametername, char description, enum ioMode *val)
+inline int ReadIoModeParameter(int argc, char *argv[], int *curnum, char *parametername, char *description, enum ioMode *val)
 {
 	if (argc - 1 > *curnum)
 	{
@@ -181,7 +185,7 @@ inline int ReadIoModeParameter(int argc, char *argv[], int *curnum, char *parame
 			return 0;
 		}
 		// Перескакиваем через один аргумент - мы его уже учли
-		*curnum++;
+		(*curnum)++;
 	}
 	else
 	{
@@ -192,7 +196,7 @@ inline int ReadIoModeParameter(int argc, char *argv[], int *curnum, char *parame
 	return 1;
 }
 
-inline int ReadFilenameParameter(int argc, char *argv[], int *curnum, char *parametername, char description, enum ioMode iomode, char **val)
+inline int ReadFilenameParameter(int argc, char *argv[], int *curnum, char *parametername, char *description, enum ioMode iomode, char **val)
 {
 	if (iomode != ioFile)
 	{
@@ -204,7 +208,7 @@ inline int ReadFilenameParameter(int argc, char *argv[], int *curnum, char *para
 	{
 		*val = argv[*curnum + 1];
 		// Перескакиваем через один аргумент - мы его уже учли
-		*curnum++;
+		(*curnum)++;
 	}
 	else
 	{
@@ -246,26 +250,30 @@ inline int ReadParameters(int argc, char* argv[], char *clrmode, enum ioMode *io
 		if (!strcmp(argv[i], "-input"))
 		{
 			argCorrect = 1;
-			paramsCorrect = ReadFilenameParameter(argc, argv, &i, "-input", "input filename", iomode, inputfilename);
+			paramsCorrect = ReadFilenameParameter(argc, argv, &i, "-input", "input filename", *iomode, inputfilename);
 		}
 		// Задание имени выходного файла
 		if (!strcmp(argv[i], "-output"))
 		{
 			argCorrect = 1;
-			paramsCorrect = ReadFilenameParameter(argc, argv, &i, "-output", "output filename", iomode, outputfilename);
+			paramsCorrect = ReadFilenameParameter(argc, argv, &i, "-output", "output filename", *iomode, outputfilename);
 		}
 		// А правильный ли вообще аргумент нам подкинули?
 		if (!argCorrect)
 		{
 			printf("Invalid argument \"%s\"\n", argv[i]);
-			paramsCorrect = 0;
+			return 0;
+		}
+		if (!paramsCorrect)
+		{
+			return 0;
 		}
 	}
 
 	if (*iomode == ioFile && (*inputfilename == NULL || *outputfilename == NULL))
 	{
 		printf("Input file name or output file name is not defined. Cannot work in file mode\n");
-		paramsCorrect = 0;
+		return 0;
 	}
 
 	return paramsCorrect;
