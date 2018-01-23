@@ -13,6 +13,7 @@ enum ioMode
 	ioConsole, ioFile
 };
 extern size_t BufSize;
+extern size_t ISize;
 inline void pHeader();
 inline void pHelp(char clrmode, enum ioMode iomode);
 inline int Calculate(bignum a, bignum b, bignum *r, char op);
@@ -41,9 +42,8 @@ int main(int argc, char* argv[])
 	}
 
 	bignum a, b, r;
-	a.absnum = calloc(BufSize, 1);
-	b.absnum = calloc(BufSize, 1);
-	r.absnum = calloc(BufSize, 1);
+	a.absnum = calloc(ISize, sizeof(char));
+	b.absnum = calloc(ISize, sizeof(char));
 	char op;
 
 	if (curmode == ioFile)
@@ -55,6 +55,8 @@ int main(int argc, char* argv[])
 			return 0;
 		}
 		FileInput(ifile, &a, &b, &op);
+		BufSize = CalcBufSize(a.absnum, b.absnum, op);
+		r.absnum = calloc(BufSize, sizeof(char));
 		switch (Calculate(a, b, &r, op))
 		{
 			case 1:
@@ -69,6 +71,7 @@ int main(int argc, char* argv[])
 		}
 		fclose(ofile);
 		fclose(ifile);
+		free(r.absnum);
 	}
 	else
 	{
@@ -85,6 +88,8 @@ int main(int argc, char* argv[])
 				continue;
 			}
 
+			BufSize = CalcBufSize(a.absnum, b.absnum, op);
+			r.absnum = calloc(BufSize, sizeof(char));
 			switch (Calculate(a, b, &r, op))
 			{
 				case 1:
@@ -97,13 +102,12 @@ int main(int argc, char* argv[])
 					printf("Error\n");
 			}
 
+			free(r.absnum);
 			Erase(a.absnum);
 			Erase(b.absnum);
-			Erase(r.absnum);
 		}
 	}
 
-	free(r.absnum);
 	free(b.absnum);
 	free(a.absnum);
 	return 0;

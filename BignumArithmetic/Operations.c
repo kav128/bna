@@ -6,6 +6,8 @@
 
 typedef signed char shortint;
 
+// Размер буфера ввода
+size_t ISize = 512;
 // Размер всех строк для хранения чисел и промежуточных вычислений
 size_t BufSize = 512;
 
@@ -93,6 +95,7 @@ void MulN(const char *a, const char *b, char *res)
 		MulToIntN(a, *(b + i) - '0', p, lnb - i - 1);
 		AddN(res, p, res);
 	}
+	ZeroTrim(res);
 	free(p);
 }
 

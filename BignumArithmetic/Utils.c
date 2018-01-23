@@ -160,3 +160,35 @@ void memswap(char *a, char *b, size_t len)
 		*(a + i) ^= *(b + i);
 	}
 }
+
+//Считаем размер буфера для вычислений. Значение берем с небольшим запасом
+int CalcBufSize(char *a, char *b, char op)
+{
+	int ae = strlen(a) - 1;
+	int be = strlen(b) - 1;
+	double am = *a - '0' + (ae > 0 ? (*(a + 1) + 1 - '0') / 10.0 : 0);
+	double bm = *b - '0' + (be > 0 ? (*(b + 1) + 1 - '0') / 10.0 : 0);
+
+	if (op == '+' || op == '-')
+	{
+		return (int)(1.05 * (ae > be ? ae : be) + 4);
+	}
+
+	if (op == '*')
+	{
+		int re = ae + be;
+		double rm = am * bm;
+		if (rm > 10)
+		{
+			rm /= 10;
+			re++;
+		}
+
+		return (int)(1.1 * re + 4);
+	}
+
+	if (op == '/')
+	{
+		return ae + 4;
+	}
+}
