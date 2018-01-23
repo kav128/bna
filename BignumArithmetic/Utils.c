@@ -9,22 +9,24 @@ extern size_t BufSize;
 void ZeroTrim(char *str)
 {
 	size_t shift = 0;
-	// Вдруг число отрицательное
-	int start = *str == '-' ? 1 : 0;
+	*(str + BufSize - 1) = 0; // Должна же строка нулем заканчиваться. А вдруг не заканчивается?
 	size_t len = strlen(str) + 1;
-	while (*(str + start + shift) == '0')
+	while (*(str + shift) == '0')
 	{
 		shift++;
 	}
-	if (shift == len - start - 1)
+	if (shift == len - 1)
 	{
 		shift--;
 	}
+	if (shift == 0)
+	{
+		return;
+	}
 
-	memcpy(str + start, str + start + shift, len - shift);
-	len -= shift;
+	memcpy(str, str + shift, len - shift);
 	// Зануляем байты в конце строки
-	memset(str + start + len, 0, len);
+	memset(str + len, 0, shift);
 }
 
 // Добавляем лидирующие нули
