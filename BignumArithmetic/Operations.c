@@ -44,23 +44,13 @@ void SubN(char *a, char *b, char *res)
 	shortint *cp = p + (lna > lnb ? lna : lnb);
 	do
 	{
-		shortint rs = *(_a + i) - *(_b + i) + *(_p + i);
-		if (rs < 0)
-		{
-			rs += 10;
-			int j = i;
-			do
-			{
-				j--;
-			} while (*(_a + j) == '0');
-			*(_p + j++) = -1;
-			for (; j < i; j++)
-			{
-				*(_p + j) = 9;
-			}
-
-		}
-		*(res + i) = '0' + rs;
+		r = (ca >= a ? *ca - '0' : 0) - (cb >= b ? *cb - '0' : 0) + *cp;
+		cp--;
+		*cr = (r < 0 ? r + 10 : r) + '0';
+		*cp = r < 0 ? -1 : 0;
+		cr--;
+		cb--;
+		ca--;
 	}
 	while (cr >= res);
 }
@@ -68,35 +58,26 @@ void SubN(char *a, char *b, char *res)
 // Умножение на однозначное число и добавление нескольких нулей в конец. Служебная функция
 void MulToIntN(const char *a, char b, char *res, size_t zeros)
 {
-	char *_a = calloc(2 * BufSize, sizeof(char));
-	char *p = calloc(2 * BufSize, sizeof(char));
-	char *_res = calloc(2 * BufSize, sizeof(char));
-	memcpy(_a, a, 2 * BufSize);
-	memset(_a + BufSize, 0, BufSize);
-	memset(p, 0, 2 * BufSize);
-	AddZeros(_a, 1);
-	size_t ln = strlen(_a);
-	for (int i = ln - 1; i >= 0; i--)
+	size_t lna = strlen(a);
+	char *ca = a + lna - 1;
+	char *cr = res + lna + zeros;
+	while (cr > res + lna)
 	{
-		char rs = (*(_a + i) - '0') * b + *(p + i);
-		*(_res + i) = rs % 10 + '0';
-		if (i > 0)
-		{
-			*(p + i - 1) = rs / 10;
-		}
+		*cr = '0';
+		cr--;
 	}
-	ZeroTrim(_res);
-
-	ln = strlen(_res);
-	if (zeros > 0)
+	unsigned char p = 0;
+	unsigned char r = 0;
+	do
 	{
-		memset(_res + ln, '0', zeros);
+		r = (ca >= a ? (*ca - '0') : 0) * b + p;
+		*cr = r % 10 + '0';
+		p = r / 10;
+		cr--;
+		ca--;
 	}
-	memcpy(res, _res, BufSize);
-	*(res + BufSize - 1) = 0;
-	free(_res);
-	free(p);
-	free(_a);
+	while (cr >= res);
+	ZeroTrim(res);
 }
 
 // "Нормализованное" умножение, 0 <= a, b
